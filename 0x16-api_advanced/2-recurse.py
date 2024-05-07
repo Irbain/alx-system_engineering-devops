@@ -1,34 +1,37 @@
-s module provides a function that sends a get request to the Reddit API
-    with the specified subreddit then process the response and prints all the
-        titles of the hot posts listed for a given subreddit
-        """
+#!/usr/bin/python3
+"""
+Recursive function that queries the Reddit API and returns
+a list containing the titles of all hot articles for a given subreddit.
+If no results are found for the given subreddit,
+the function should return None.
+"""
+
+import requests
 
 
-        def recurse(subreddit, hot_list=[], after=None):
-            """
-                recurse: This function queries the Reddit API recursively
-                    Args:
-                                subreddit (str): The api subreddit to send a get request to.
-                                    Return: List of all the posts
-                                        """
+def recurse(subreddit, hot_list=[], after=""):
+    """
+    Queries the Reddit API and returns
+    a list containing the titles of all hot articles for a given subreddit.
 
-                                            import requests
+    - If not a valid subreddit, return None.
+    """
+    req = requests.get(
+        "https://www.reddit.com/r/{}/hot.json".format(subreddit),
+        headers={"User-Agent": "Custom"},
+        params={"after": after},
+    )
 
-                                                if (after is None and len(hot_list) != 0):
-                                                        return hot_list
+    if req.status_code == 200:
+        for get_data in req.json().get("data").get("children"):
+            dat = get_data.get("data")
+            title = dat.get("title")
+            hot_list.append(title)
+        after = req.json().get("data").get("after")
 
-                                                            url = 'https://www.reddit.com/r/{}/hot.json'.format(subreddit)
-                                                                headers = {'User-Agent': 'MyServer/1.0'}
-                                                                    params = {'after': after}
-
-                                                                        response = requests.get(url, headers=headers, params=params)
-                                                                            if response.status_code != 200:
-                                                                                    return None
-                                                                                        try:
-                                                                                                hot_posts = response.json()['data']['children']
-                                                                                                        after = response.json()['data']['after']
-                                                                                                                hot_list.extend(hot_posts)
-                                                                                                                        recurse(subreddit, hot_list, after)
-                                                                                                                                return hot_list
-                                                                                                                                    except IndexError:
-                                                                                                                                            return None
+        if after is None:
+            return hot_list
+        else:
+            return recurse(subreddit, hot_list, after)
+    else:
+        return None
